@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+  <script src="../packages/vue/dist/vue.global.js"></script>
+</head>
+<body>
+<div id="counter">
+  Counter: {{ counter }}<br/>
+  name:{{ name }}
+</div>
+<script>
+  const Counter = {
+    data() {
+      return {
+        name:'刘涛',
+        counter: 0
+      }
+    },
+    beforeMount(){
+      console.log('beforeMount')
+    }
+  }
+
+  Vue.createApp(Counter).mount('#counter')
+</script>
+</body>
+</html>

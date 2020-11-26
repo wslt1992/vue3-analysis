@@ -365,6 +365,9 @@ function _createVNode(
     }
   }
 
+  /**
+   *  判断当前虚拟节点的ShapeFlag类型
+   */
   // encode the vnode type information into a bitmap
   const shapeFlag = isString(type)
     ? ShapeFlags.ELEMENT

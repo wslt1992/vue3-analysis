@@ -9,6 +9,7 @@
 <div id="counter">
   Counter: {{ counter }}<br/>
   name:{{ name }}
+<button @click="handleClickName">click changename</button>
 </div>
 <script>
   const Counter = {
@@ -20,10 +21,18 @@
     },
     beforeMount(){
       console.log('beforeMount')
+    },
+    methods: {
+      handleClickName(){
+        this.name = 'lt'
+      }
     }
+
   }
 
   Vue.createApp(Counter).mount('#counter')
+
+
 </script>
 </body>
 </html>

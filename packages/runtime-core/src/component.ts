@@ -553,6 +553,10 @@ function setupStatefulComponent(
   instance.accessCache = Object.create(null)
   // 1. create public instance / render proxy
   // also mark it raw so it's never observed
+  /*
+  * 代理监听，当value改变，触发proxy的set方法
+  * PublicInstanceProxyHandlers 处理配置
+  * */
   instance.proxy = new Proxy(instance.ctx, PublicInstanceProxyHandlers)
   if (__DEV__) {
     exposePropsOnRenderContext(instance)
@@ -664,6 +668,9 @@ function finishComponentSetup(
       if (__DEV__) {
         startMeasure(instance, `compile`)
       }
+      /*
+      * 将template 编译为render函数，涉及ast处理
+      * */
       Component.render = compile(Component.template, {
         isCustomElement: instance.appContext.config.isCustomElement,
         delimiters: Component.delimiters

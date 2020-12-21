@@ -77,8 +77,43 @@ export function baseCompile(
   if (options.scopeId && !isModuleMode) {
     onError(createCompilerError(ErrorCodes.X_SCOPE_ID_NOT_SUPPORTED))
   }
+  /*
+  解析template 为 ast
+  例子1
+   Counter:
+  =========>
+      content: " Counter: "
+      loc:
+      end:
+      column: 12
+      line: 2
+      offset: 12
+      source: "↵  Counter: "
+      start:
+      column: 1
+      line: 1
+      offset: 0
+      type: 2
 
+
+      例2
+      {{ counter }}
+      ==========>
+      content: {type: 4, isStatic: false, isConstant: false, content: "counter", loc: {…}}
+      loc:
+      结束位置行列
+      end: {column: 25, line: 2, offset: 25}
+      source: "{{ counter }}"
+      start: {column: 12, line: 2, offset: 12}
+      开始位置行列
+      __proto__: Object
+      type: 5
+      __proto__: Object
+  * */
   const ast = isString(template) ? baseParse(template, options) : template
+  /*
+  * ast转化为render函数的预设
+  * */
   const [nodeTransforms, directiveTransforms] = getBaseTransformPreset(
     prefixIdentifiers
   )

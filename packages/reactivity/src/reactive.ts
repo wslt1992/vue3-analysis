@@ -50,10 +50,16 @@ function targetTypeMap(rawType: string) {
   }
 }
 
+/**
+ * 带有skip标记 或 不能扩展对象，返回INVALID
+ * @param value
+ */
 function getTargetType(value: Target) {
   return value[ReactiveFlags.SKIP] || !Object.isExtensible(value)
     ? TargetType.INVALID
     : targetTypeMap(toRawType(value))
+  /*toRawType 获取value类型（object、map、array）*/
+  /*targetTypeMap 返回响应式 应用类型标记*/
 }
 
 // only unwrap nested ref
@@ -186,14 +192,19 @@ function createReactiveObject(
   // target already has corresponding Proxy
   const proxyMap = isReadonly ? readonlyMap : reactiveMap
   const existingProxy = proxyMap.get(target)
+  /* 查找是否已经存在 当前的对象 的 代理对象 */
   if (existingProxy) {
     return existingProxy
   }
   // only a whitelist of value types can be observed.
+  /*获取对象类型，如果是不可代理类型，直接返回*/
   const targetType = getTargetType(target)
   if (targetType === TargetType.INVALID) {
     return target
   }
+  /*collectionHandlers 集合处理对象
+  * baseHandlers 基础处理对象
+  * */
   const proxy = new Proxy(
     target,
     targetType === TargetType.COLLECTION ? collectionHandlers : baseHandlers

@@ -172,6 +172,7 @@ export function trigger(
   oldValue?: unknown,
   oldTarget?: Map<unknown, unknown> | Set<unknown>
 ) {
+  /* 以当前对象获取 依赖集合depsMap*/
   const depsMap = targetMap.get(target)
   if (!depsMap) {
     // never been tracked
@@ -202,6 +203,7 @@ export function trigger(
   } else {
     // schedule runs for SET | ADD | DELETE
     if (key !== void 0) {
+      /* 获取 当前依赖对象集合 具体key值的  依赖对象集合*/
       add(depsMap.get(key))
     }
 
@@ -247,11 +249,12 @@ export function trigger(
       })
     }
     if (effect.options.scheduler) {
+      /* 调度触发*/
       effect.options.scheduler(effect)
     } else {
       effect()
     }
   }
-
+  /*依次触发依赖集合中的函数*/
   effects.forEach(run)
 }

@@ -10,9 +10,18 @@
   Counter: {{ counter }}<br/>
   name:{{ name }}
 <button @click="handleClickName">click changename</button>
+<button @click="count.a++">click count</button>
 </div>
 <script>
+  const {watchEffect,reactive} = Vue
   const Counter = {
+    setup() {
+      const count = reactive({a:1});
+      watchEffect(() => {
+        console.log(count.a);
+      });
+      return { count };
+    },
     data() {
       return {
         name:'刘涛',

@@ -822,6 +822,7 @@ function resolveData(
         `Plain object usage is no longer supported.`
     )
   }
+  /*调用组件内data函数，生成数据*/
   const data = dataFn.call(publicThis, publicThis)
   if (__DEV__ && isPromise(data)) {
     warn(
@@ -833,6 +834,7 @@ function resolveData(
   if (!isObject(data)) {
     __DEV__ && warn(`data() should return an object.`)
   } else if (instance.data === EMPTY_OBJ) {
+    /*data数据转化为 reactive数据*/
     instance.data = reactive(data)
   } else {
     // existing data: this is a mixin or extends.

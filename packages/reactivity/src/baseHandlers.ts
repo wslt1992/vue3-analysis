@@ -153,6 +153,7 @@ function createSetter(shallow = false) {
       if (!hadKey) {
         trigger(target, TriggerOpTypes.ADD, key, value)
       } else if (hasChanged(value, oldValue)) {
+        /*触发关联 依赖*/
         trigger(target, TriggerOpTypes.SET, key, value, oldValue)
       }
     }

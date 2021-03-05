@@ -10,7 +10,7 @@
   Counter: {{ counter }}<br/>
   name:{{ name }}
 <button @click="handleClickName">click changename</button>
-<button @click="count.a++">click count</button>
+<button @click="handleCountPlus">click count</button>
 </div>
 <script>
   const {watchEffect,reactive} = Vue
@@ -34,6 +34,9 @@
     methods: {
       handleClickName(){
         this.name = 'lt'
+      },
+      handleCountPlus(){
+        this.count.a = this.count.a +1
       }
     }
 

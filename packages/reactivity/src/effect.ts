@@ -142,16 +142,39 @@ export function track(target: object, type: TrackOpTypes, key: unknown) {
   if (!shouldTrack || activeEffect === undefined) {
     return
   }
+  /*假设
+  vue组件中，data的定义
+  data() {
+      return {
+        count: {
+          a:1
+        }
+      }
+    },
+  调用this.count.a触发当前函数
+  target={a:1}
+  key='a'
+  这里 target=Map(target,Map(key,Set()))
+  */
+  /*1.获取target对应的map*/
   let depsMap = targetMap.get(target)
   if (!depsMap) {
     targetMap.set(target, (depsMap = new Map()))
   }
+  /*2.获取target下key对应的set集合*/
   let dep = depsMap.get(key)
   if (!dep) {
     depsMap.set(key, (dep = new Set()))
   }
   if (!dep.has(activeEffect)) {
+    /*activeEffect运行，触发对key的调用；key又绑定activeEffect到自己的dep,dep是一个Set，*/
+    /*key的赋值操作，proxy的set函数，将遍历该dep，触发effect，更新视图*/
     dep.add(activeEffect)
+
+    /*activeEffect对应多个变量（例如a,b,c）的变化，当effect被清理时，需要从变量(a,b,c)的dep中清理当前effect。
+    详情见function cleanup(effect: ReactiveEffect){}
+    */
+    /*所以activeEffect添加的是变量的依赖集合，方便后续循环在dep中删除自己（activeEffect）*/
     activeEffect.deps.push(dep)
     if (__DEV__ && activeEffect.options.onTrack) {
       activeEffect.options.onTrack({

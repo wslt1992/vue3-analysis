@@ -1370,6 +1370,12 @@ function baseCreateRenderer(
         if (__DEV__) {
           startMeasure(instance, `render`)
         }
+        /*调用根组件的render函数，得到subTree,subTree是VNode（树）*/
+        /*在外部调用该函数外层，开启了enableTracking=true，
+        renderComponentRoot中调用render()函数，将触发Proxy的get函数，
+        内部track(target, TrackOpTypes.GET, key) 添加当前运行的effect到  let depsMap = targetMap.get(target)
+        两者间完成响应式绑定
+        */
         const subTree = (instance.subTree = renderComponentRoot(instance))
         if (__DEV__) {
           endMeasure(instance, `render`)

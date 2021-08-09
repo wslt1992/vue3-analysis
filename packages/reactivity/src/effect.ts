@@ -7,14 +7,24 @@ import { EMPTY_OBJ, isArray, isIntegerKey, isMap } from '@vue/shared'
 // raw Sets to reduce memory overhead.
 type Dep = Set<ReactiveEffect>
 type KeyToDepMap = Map<any, Dep>
+/*
+    假设对象const obj = {a:1},并且是第一次添加
+    targetMap.set(obj,new Map(obj.a,new Set()))
+    obj做第一层map的key，obj.a做第二层map的key，dep为Set对象
+*/
 const targetMap = new WeakMap<any, KeyToDepMap>()
 
 export interface ReactiveEffect<T = any> {
   (): T
+  /*判断当前函数为ReactiveEffect函数*/
   _isEffect: true
   id: number
   active: boolean
   raw: () => T
+  /*当前函数，反向的指向所依赖变量刚更新时的Dep。
+     变量更新，查找dep，当前函数将被调用。
+  * 作用：当前函数被清理时，清理掉dep中指向当前函数，避免空调用
+  * */
   deps: Array<Dep>
   options: ReactiveEffectOptions
   allowRecurse: boolean
@@ -48,10 +58,17 @@ let activeEffect: ReactiveEffect | undefined
 export const ITERATE_KEY = Symbol(__DEV__ ? 'iterate' : '')
 export const MAP_KEY_ITERATE_KEY = Symbol(__DEV__ ? 'Map key iterate' : '')
 
+/*判读函数类型为effect*/
 export function isEffect(fn: any): fn is ReactiveEffect {
   return fn && fn._isEffect === true
 }
 
+/**
+ *
+ * @param fn 例子：instance.update = effect(function componentEffect() {}
+ *
+ * @param options
+ */
 export function effect<T = any>(
   fn: () => T,
   options: ReactiveEffectOptions = EMPTY_OBJ
@@ -66,6 +83,7 @@ export function effect<T = any>(
   return effect
 }
 
+/*暂停effect。清理相关变量dep的响应式更新*/
 export function stop(effect: ReactiveEffect) {
   if (effect.active) {
     cleanup(effect)
@@ -78,6 +96,7 @@ export function stop(effect: ReactiveEffect) {
 
 let uid = 0
 
+/**/
 function createReactiveEffect<T = any>(
   fn: () => T,
   options: ReactiveEffectOptions
@@ -110,6 +129,7 @@ function createReactiveEffect<T = any>(
   return effect
 }
 
+/*清理相关变量dep的响应式更新*/
 function cleanup(effect: ReactiveEffect) {
   const { deps } = effect
   if (deps.length) {
@@ -123,16 +143,19 @@ function cleanup(effect: ReactiveEffect) {
 let shouldTrack = true
 const trackStack: boolean[] = []
 
+/*暂停track，shouldTrack入栈，在赋值当前为false*/
 export function pauseTracking() {
   trackStack.push(shouldTrack)
   shouldTrack = false
 }
 
+/*开启一个新track，shouldTrack入栈，在赋值true*/
 export function enableTracking() {
   trackStack.push(shouldTrack)
   shouldTrack = true
 }
 
+/*出栈*/
 export function resetTracking() {
   const last = trackStack.pop()
   shouldTrack = last === undefined ? true : last
@@ -167,7 +190,7 @@ export function track(target: object, type: TrackOpTypes, key: unknown) {
     depsMap.set(key, (dep = new Set()))
   }
   if (!dep.has(activeEffect)) {
-    /*activeEffect运行，触发对key的调用；key又绑定activeEffect到自己的dep,dep是一个Set，*/
+    /*activeEffect运行，触发对key的调用；key又添加activeEffect到自己的dep,dep是一个Set，*/
     /*key的赋值操作，proxy的set函数，将遍历该dep，触发effect，更新视图*/
     dep.add(activeEffect)
 
@@ -187,6 +210,10 @@ export function track(target: object, type: TrackOpTypes, key: unknown) {
   }
 }
 
+/*通过target从targetMap中获取到depsMap,
+  在通过key从depsMap中获取deps
+*
+* */
 export function trigger(
   target: object,
   type: TriggerOpTypes,
@@ -229,8 +256,13 @@ export function trigger(
       /* 获取 当前依赖对象集合 具体key值的  依赖对象集合*/
       add(depsMap.get(key))
     }
-
     // also run for iteration key on ADD | DELETE | Map.SET
+    /*存在key，add(depsMap.get(key))
+    不存在key，但是target被调用了。target有可能是map对象。
+    * 获取Symbol.iterator，添加到add(depsMap.get(Symbol.iterator))
+
+     ？？？疑问，target怎么才能是map？？？
+    * */
     switch (type) {
       case TriggerOpTypes.ADD:
         if (!isArray(target)) {
@@ -252,6 +284,7 @@ export function trigger(
         }
         break
       case TriggerOpTypes.SET:
+        /*疑问，target怎么才能是map*/
         if (isMap(target)) {
           add(depsMap.get(ITERATE_KEY))
         }

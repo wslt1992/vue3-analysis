@@ -31,10 +31,13 @@ const builtInSymbols = new Set(
     .map(key => (Symbol as any)[key])
     .filter(isSymbol)
 )
-
+/*普通的get*/
 const get = /*#__PURE__*/ createGetter()
+/*数据变化只监听一层的get*/
 const shallowGet = /*#__PURE__*/ createGetter(false, true)
+/*只读get*/
 const readonlyGet = /*#__PURE__*/ createGetter(true)
+/*一层并只读get*/
 const shallowReadonlyGet = /*#__PURE__*/ createGetter(true, true)
 
 const arrayInstrumentations: Record<string, Function> = {}
@@ -70,6 +73,7 @@ const arrayInstrumentations: Record<string, Function> = {}
 })
 
 function createGetter(isReadonly = false, shallow = false) {
+  /* 调用的为对象特殊key，直接返回值*/
   return function get(target: Target, key: string | symbol, receiver: object) {
     if (key === ReactiveFlags.IS_REACTIVE) {
       return !isReadonly
@@ -87,6 +91,7 @@ function createGetter(isReadonly = false, shallow = false) {
       return Reflect.get(arrayInstrumentations, key, receiver)
     }
 
+    /*获取target[key]的值*/
     const res = Reflect.get(target, key, receiver)
 
     if (
@@ -97,10 +102,14 @@ function createGetter(isReadonly = false, shallow = false) {
       return res
     }
 
+    /*如果是只读，则不进行track。
+    * 只读无法被修改，也不需要track
+    * */
     if (!isReadonly) {
       track(target, TrackOpTypes.GET, key)
     }
 
+    /*shallow，直接返回数据。*/
     if (shallow) {
       return res
     }
@@ -115,6 +124,12 @@ function createGetter(isReadonly = false, shallow = false) {
       // Convert returned value into a proxy as well. we do the isObject check
       // here to avoid invalid value warning. Also need to lazy access readonly
       // and reactive here to avoid circular dependency.
+      /*返回值是一个对象，内部属性也需要相同的处理。
+      * 如果当前有readonly标记，内层也需要只读处理。（递归只读处理）
+      * 非readonly，进行响应式处理。不同于const只防止自己被赋值，而不能防止属性被改变；
+      * readonly可以防止自己和内部属性的变化；
+      * readonly也不会进行track()处理。假设进行track处理，而readonly不会变化，处理无意义
+      * */
       return isReadonly ? readonly(res) : reactive(res)
     }
 
@@ -143,12 +158,27 @@ function createSetter(shallow = false) {
       // in shallow mode, objects are set as-is regardless of reactive or not
     }
 
+    /*1.如果是数组并key为number类型；判断key<length
+    * 2.判断target是否存在key
+    * */
     const hadKey =
       isArray(target) && isIntegerKey(key)
         ? Number(key) < target.length
         : hasOwn(target, key)
     const result = Reflect.set(target, key, value, receiver)
     // don't trigger if target is something up in the prototype chain of original
+    /* 对象原型链指向了proxy，此时receiver不是target的proxy。receiver、target是同一个对象
+    * const proxy = new Proxy({}, {
+      get: function(target, property, receiver) {
+        return receiver;
+      }
+    });
+
+    const d = Object.create(proxy);
+    d.a === d // true
+    //d对象本身没有a属性，所以读取d.a的时候，会去d的原型proxy对象找。这时，receiver就指向d，代表原始的读操作所在的那个对象。
+    原文链接：https://blog.csdn.net/gercke/article/details/103228737
+    * */
     if (target === toRaw(receiver)) {
       if (!hadKey) {
         trigger(target, TriggerOpTypes.ADD, key, value)
